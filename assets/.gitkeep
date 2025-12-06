@@ -1,0 +1,17 @@
+# Assets Directory
+
+This directory is for app assets like icons, splash screens, etc.
+
+The app currently works without any assets as it uses:
+- Emojis for mood display
+- Gradient backgrounds (programmatically generated)
+- System fonts
+
+If you want to add custom assets:
+- icon.png (1024x1024) - App icon
+- splash.png (1242x2436) - Splash screen
+- adaptive-icon.png (1024x1024) - Android adaptive icon
+- favicon.png (48x48) - Web favicon
+
+These are optional - Expo will use defaults if not provided.
+
