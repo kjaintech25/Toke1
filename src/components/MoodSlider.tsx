@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
+import { getColorForMood, shouldUseDarkText } from '../utils/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 80; // Padding on both sides
@@ -104,6 +105,12 @@ export const MoodSlider: React.FC<MoodSliderProps> = ({ value, onValueChange }) 
     };
   });
 
+  // Calculate if we should use dark text based on current mood color
+  const moodColor = getColorForMood(value);
+  const useDarkText = shouldUseDarkText(moodColor);
+  const textColor = useDarkText ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.98)';
+  const textShadowColor = useDarkText ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.5)';
+
   return (
     <View style={styles.container}>
       <GestureDetector gesture={composedGesture}>
@@ -123,9 +130,9 @@ export const MoodSlider: React.FC<MoodSliderProps> = ({ value, onValueChange }) 
       
       {/* Value labels */}
       <View style={styles.labels}>
-        <Text style={styles.label}>1</Text>
-        <Text style={styles.label}>5</Text>
-        <Text style={styles.label}>10</Text>
+        <Text style={[styles.label, { color: textColor, textShadowColor }]}>1</Text>
+        <Text style={[styles.label, { color: textColor, textShadowColor }]}>5</Text>
+        <Text style={[styles.label, { color: textColor, textShadowColor }]}>10</Text>
       </View>
     </View>
   );
@@ -146,14 +153,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: 2,
   },
   trackActive: {
     position: 'absolute',
     left: 0,
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderRadius: 2,
   },
   thumb: {
@@ -180,9 +187,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: THUMB_SIZE / 2,
   },
   label: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 12,
-    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 13,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
 

@@ -37,7 +37,11 @@ export default function App() {
             },
           }}
         >
-          <Stack.Screen name="MoodTracker" component={MoodTrackerScreen} />
+          <Stack.Screen 
+            name="MoodTracker" 
+            component={MoodTrackerScreen}
+            initialParams={{ selectedDate: null }}
+          />
           <Stack.Screen name="History" component={HistoryScreen} />
         </Stack.Navigator>
       </NavigationContainer>

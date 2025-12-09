@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -28,14 +28,25 @@ export const JournalModal: React.FC<JournalModalProps> = ({
 }) => {
   const [notes, setNotes] = useState(initialNotes);
 
+  // Update notes when modal opens with new initialNotes
+  useEffect(() => {
+    if (visible) {
+      setNotes(initialNotes || '');
+    }
+  }, [visible, initialNotes]);
+
   const handleSave = () => {
     onSave(notes);
-    setNotes('');
     onClose();
   };
 
   const handleSkip = () => {
-    setNotes('');
+    // If there were existing notes, preserve them
+    if (initialNotes) {
+      onSave(initialNotes);
+    } else {
+      onSave('');
+    }
     onClose();
   };
 
@@ -53,7 +64,7 @@ export const JournalModal: React.FC<JournalModalProps> = ({
         <View style={styles.modalContent}>
           <Text style={styles.title}>How are you feeling?</Text>
           <Text style={styles.subtitle}>
-            Add a note about your mood (optional)
+            {initialNotes ? 'Edit your journal entry (optional)' : 'Add a note about your mood (optional)'}
           </Text>
 
           <TextInput
@@ -72,7 +83,9 @@ export const JournalModal: React.FC<JournalModalProps> = ({
               style={[styles.button, styles.skipButton]}
               onPress={handleSkip}
             >
-              <Text style={styles.skipButtonText}>Skip</Text>
+              <Text style={styles.skipButtonText}>
+                {initialNotes ? 'Keep Original' : 'Skip'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.saveButton]}

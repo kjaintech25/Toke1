@@ -17,11 +17,11 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({ moodValu
   // Calculate colors for gradient with smooth interpolation
   const colors = useMemo(() => {
     const color1 = getColorForMood(moodValue);
-    // Create a slightly darker/lighter version for gradient effect
+    // Create a slightly darker version for gradient effect (instead of lighter)
     const color2: Color = {
-      r: Math.max(0, Math.min(255, color1.r + 30)),
-      g: Math.max(0, Math.min(255, color1.g + 30)),
-      b: Math.max(0, Math.min(255, color1.b + 30)),
+      r: Math.max(0, Math.min(255, color1.r - 20)),
+      g: Math.max(0, Math.min(255, color1.g - 20)),
+      b: Math.max(0, Math.min(255, color1.b - 20)),
     };
     return [colorToRgba(color1), colorToRgba(color2)];
   }, [moodValue]);

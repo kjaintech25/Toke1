@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { getMoodEntries } from '../utils/storage';
 import { MoodEntry } from '../types/mood';
 import { getEmojiForMood } from '../utils/emojiMap';
+import { getColorForMood, colorToRgba } from '../utils/colors';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -51,15 +53,31 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
     const date = parseISO(item.date);
     const formattedDate = format(date, 'MMMM d, yyyy');
     
+    // Get mood color and create muted version
+    const moodColor = getColorForMood(item.rating);
+    const mutedBackgroundColor = colorToRgba(moodColor, 0.15); // Muted with 15% opacity
+    
     return (
-      <View style={styles.listItem}>
+      <TouchableOpacity
+        style={[styles.listItem, { backgroundColor: mutedBackgroundColor }]}
+        onPress={() => handleDatePress(date)}
+        activeOpacity={0.7}
+      >
         <Text style={styles.listEmoji}>{getEmojiForMood(item.rating)}</Text>
         <View style={styles.listItemContent}>
           <Text style={styles.listDate}>{formattedDate}</Text>
           <Text style={styles.listRating}>Rating: {item.rating}/10</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
+  };
+
+  const handleDatePress = (date: Date) => {
+    // Navigate to main screen with the selected date
+    // Use replace instead of navigate to prevent back button issues
+    navigation.navigate('MoodTracker', { 
+      selectedDate: date.toISOString() 
+    });
   };
 
   const renderCalendarView = () => {
@@ -89,7 +107,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
     };
 
     return (
-      <View style={styles.calendarContainer}>
+      <ScrollView style={styles.calendarScrollView} contentContainerStyle={styles.calendarContainer}>
         <View style={styles.calendarHeader}>
           <TouchableOpacity
             onPress={() => {
@@ -128,13 +146,26 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
           <View key={weekIndex} style={styles.calendarWeek}>
             {week.map((day, dayIndex) => {
               const entry = getEntryForDate(day);
+              // Get mood color and create muted version for calendar days
+              const moodColor = entry ? getColorForMood(entry.rating) : null;
+              const mutedBackgroundColor = moodColor ? colorToRgba(moodColor, 0.2) : undefined;
+              
               return (
-                <View
+                <TouchableOpacity
                   key={dayIndex}
                   style={[
                     styles.calendarDay,
                     !day && styles.calendarDayEmpty,
+                    entry && styles.calendarDayWithEntry,
+                    mutedBackgroundColor && { backgroundColor: mutedBackgroundColor },
                   ]}
+                  onPress={() => {
+                    if (day) {
+                      handleDatePress(day);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  disabled={!day}
                 >
                   {day && (
                     <>
@@ -148,12 +179,12 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
                       )}
                     </>
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
         ))}
-      </View>
+      </ScrollView>
     );
   };
 
@@ -257,7 +288,6 @@ const styles = StyleSheet.create({
   },
   listItem: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -283,6 +313,9 @@ const styles = StyleSheet.create({
   listRating: {
     fontSize: 14,
     color: '#666',
+  },
+  calendarScrollView: {
+    flex: 1,
   },
   calendarContainer: {
     padding: 20,
@@ -325,9 +358,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     marginHorizontal: 2,
+    minHeight: DAY_SIZE,
   },
   calendarDayEmpty: {
     backgroundColor: 'transparent',
+  },
+  calendarDayWithEntry: {
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)', // Muted border
   },
   calendarDayNumber: {
     fontSize: 12,

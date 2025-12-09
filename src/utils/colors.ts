@@ -14,7 +14,7 @@ export interface Color {
  * Values 1-3: Deep blue → dark purple (melancholy/sad)
  * Values 4-5: Purple → muted lavender/gray (neutral transition)
  * Values 6-7: Soft warm tones → yellow/peach (positive emerging)
- * Values 8-10: Bright yellow → vibrant green/lime (happy/energetic)
+ * Values 8-10: Muted warm tones → soft green (happy/energetic but readable)
  */
 const colorStops: { value: number; color: Color }[] = [
   { value: 1, color: { r: 30, g: 30, b: 100 } }, // Deep blue
@@ -22,10 +22,10 @@ const colorStops: { value: number; color: Color }[] = [
   { value: 4, color: { r: 128, g: 0, b: 128 } }, // Purple
   { value: 5, color: { r: 150, g: 120, b: 180 } }, // Muted lavender/gray
   { value: 6, color: { r: 255, g: 200, b: 150 } }, // Soft warm/peach
-  { value: 7, color: { r: 255, g: 220, b: 100 } }, // Yellow/peach
-  { value: 8, color: { r: 255, g: 235, b: 59 } }, // Bright yellow
-  { value: 9, color: { r: 200, g: 255, b: 100 } }, // Yellow-green
-  { value: 10, color: { r: 150, g: 255, b: 100 } }, // Vibrant green/lime
+  { value: 7, color: { r: 255, g: 220, b: 140 } }, // Muted yellow/peach
+  { value: 8, color: { r: 255, g: 200, b: 100 } }, // Muted warm yellow (less bright)
+  { value: 9, color: { r: 200, g: 220, b: 120 } }, // Muted yellow-green
+  { value: 10, color: { r: 160, g: 200, b: 120 } }, // Muted green (much less bright)
 ];
 
 /**
@@ -63,6 +63,29 @@ export const getColorForMood = (rating: number): Color => {
   const t = range > 0 ? (clampedRating - lowerStop.value) / range : 0;
 
   return interpolateColor(lowerStop.color, upperStop.color, t);
+};
+
+/**
+ * Calculate luminance of a color (0-1)
+ * Higher values = brighter colors
+ */
+export const getLuminance = (color: Color): number => {
+  const r = color.r / 255;
+  const g = color.g / 255;
+  const b = color.b / 255;
+  
+  const [rs, gs, bs] = [r, g, b].map(val => {
+    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+  });
+  
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+};
+
+/**
+ * Determines if text should be dark or light based on background color
+ */
+export const shouldUseDarkText = (color: Color): boolean => {
+  return getLuminance(color) > 0.5;
 };
 
 /**
