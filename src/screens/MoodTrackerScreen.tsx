@@ -18,7 +18,10 @@ import Animated, {
 import { GradientBackground } from '../components/GradientBackground';
 import { MoodEmoji } from '../components/MoodEmoji';
 import { MoodSlider } from '../components/MoodSlider';
+import { DateScrollBar } from '../components/DateScrollBar';
+import { JournalModal } from '../components/JournalModal';
 import { saveMoodEntry } from '../utils/storage';
+import { format } from 'date-fns';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,39 +31,34 @@ interface MoodTrackerScreenProps {
 
 /**
  * MoodTrackerScreen - Main mood tracking interface
- * Layout: Emoji upper 60%, Slider bottom 25-30%
- * Features: Real-time updates, save functionality, calendar navigation
+ * Layout: Calendar bar at top, Large emoji center (75%), Slider bottom (15%)
+ * Features: Tap emoji to save, journal popup, date selection
  */
-export const MoodTrackerScreen: React.FC<MoodTrackerScreenProps> = ({ navigation }) => {
+export const MoodTrackerScreen: React.FC<MoodTrackerScreenProps> = ({
+  navigation,
+}) => {
   const [moodValue, setMoodValue] = useState(5);
   const [isSaving, setIsSaving] = useState(false);
-  const saveButtonScale = useSharedValue(1);
-  const saveConfirmationOpacity = useSharedValue(0);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showJournalModal, setShowJournalModal] = useState(false);
+  const [pendingMoodValue, setPendingMoodValue] = useState(5);
 
   const handleValueChange = (value: number) => {
     setMoodValue(value);
   };
 
-  const handleSave = async () => {
+  const handleEmojiPress = async () => {
     if (isSaving) return;
 
     setIsSaving(true);
-    
-    // Animate button press
-    saveButtonScale.value = withSequence(
-      withSpring(0.95, { damping: 10 }),
-      withSpring(1, { damping: 10 })
-    );
+    setPendingMoodValue(moodValue);
 
     try {
+      // Save mood without notes first
       await saveMoodEntry(moodValue);
       
-      // Show confirmation
-      saveConfirmationOpacity.value = withSequence(
-        withTiming(1, { duration: 200 }),
-        withTiming(1, { duration: 1500 }),
-        withTiming(0, { duration: 200 })
-      );
+      // Show journal modal
+      setShowJournalModal(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to save mood entry. Please try again.');
       console.error('Save error:', error);
@@ -69,30 +67,39 @@ export const MoodTrackerScreen: React.FC<MoodTrackerScreenProps> = ({ navigation
     }
   };
 
+  const handleJournalSave = async (notes: string) => {
+    try {
+      // Update the entry with journal notes
+      await saveMoodEntry(pendingMoodValue, notes);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save journal entry.');
+      console.error('Journal save error:', error);
+    }
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    // TODO: Load mood for selected date if it exists
+  };
+
   const handleCalendarPress = () => {
     navigation.navigate('History');
   };
 
-  const saveButtonStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: saveButtonScale.value }],
-    };
-  });
-
-  const confirmationStyle = useAnimatedStyle(() => {
-    return {
-      opacity: saveConfirmationOpacity.value,
-    };
-  });
-
   return (
     <View style={styles.container}>
       <GradientBackground moodValue={moodValue} />
-      
+
       <SafeAreaView style={styles.safeArea}>
-        {/* Header with calendar icon */}
+        {/* Calendar scroll bar at top */}
+        <DateScrollBar
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+        />
+
+        {/* Header with history button */}
         <View style={styles.header}>
-          <Text style={styles.pageTitle}>Mood Tracker - Track Your Daily Mood</Text>
+          <Text style={styles.pageTitle}>Mood Tracker</Text>
           <TouchableOpacity
             onPress={handleCalendarPress}
             style={styles.calendarButton}
@@ -102,34 +109,27 @@ export const MoodTrackerScreen: React.FC<MoodTrackerScreenProps> = ({ navigation
           </TouchableOpacity>
         </View>
 
-        {/* Emoji section - upper 60% */}
+        {/* Large emoji section - takes up 75% of screen */}
         <View style={styles.emojiContainer}>
-          <MoodEmoji moodValue={moodValue} />
+          <MoodEmoji moodValue={moodValue} onPress={handleEmojiPress} />
+          {isSaving && (
+            <Text style={styles.savingText}>Saving...</Text>
+          )}
         </View>
 
-        {/* Slider and button section - bottom 25-30% */}
+        {/* Slider section - bottom 15% */}
         <View style={styles.bottomSection}>
           <MoodSlider value={moodValue} onValueChange={handleValueChange} />
-          
-          <Animated.View style={[styles.saveButtonContainer, saveButtonStyle]}>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-              disabled={isSaving}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.saveButtonText}>
-                {isSaving ? 'Saving...' : 'Log Mood'}
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Save confirmation */}
-          <Animated.View style={[styles.confirmation, confirmationStyle]}>
-            <Text style={styles.confirmationText}>✓ Mood saved!</Text>
-          </Animated.View>
+          <Text style={styles.hintText}>Tap the emoji to save your mood</Text>
         </View>
       </SafeAreaView>
+
+      {/* Journal Modal */}
+      <JournalModal
+        visible={showJournalModal}
+        onClose={() => setShowJournalModal(false)}
+        onSave={handleJournalSave}
+      />
     </View>
   );
 };
@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    zIndex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -147,11 +148,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   pageTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.95)',
     flex: 1,
   },
@@ -167,49 +168,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   emojiContainer: {
-    flex: 0.6, // Upper 60%
+    flex: 0.75, // Takes up 75% of screen
     justifyContent: 'center',
     alignItems: 'center',
   },
-  bottomSection: {
-    flex: 0.3, // Bottom 25-30% (using 0.3 for better spacing)
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  saveButtonContainer: {
-    marginTop: 30,
-    alignItems: 'center',
-  },
-  saveButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingVertical: 16,
-    paddingHorizontal: 48,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    minWidth: 150,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#333',
+  savingText: {
+    marginTop: 20,
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  confirmation: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  confirmationText: {
-    color: 'rgba(255, 255, 255, 0.95)',
-    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
+  bottomSection: {
+    flex: 0.15, // Bottom 15%
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  hintText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 });
-

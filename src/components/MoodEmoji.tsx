@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,13 +10,15 @@ import { getEmojiForMood } from '../utils/emojiMap';
 
 interface MoodEmojiProps {
   moodValue: number;
+  onPress?: () => void;
 }
 
 /**
- * MoodEmoji component displays a large emoji (120-140px) that animates
- * with a subtle scale/bounce effect when the mood value changes
+ * MoodEmoji component displays a large emoji (220px) with 3D effects
+ * that animates with a subtle scale/bounce effect when the mood value changes
+ * Now tappable to save mood
  */
-export const MoodEmoji: React.FC<MoodEmojiProps> = ({ moodValue }) => {
+export const MoodEmoji: React.FC<MoodEmojiProps> = ({ moodValue, onPress }) => {
   const scale = useSharedValue(1);
   const emoji = getEmojiForMood(moodValue);
 
@@ -35,20 +37,39 @@ export const MoodEmoji: React.FC<MoodEmojiProps> = ({ moodValue }) => {
   });
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
-      <Text style={styles.emoji}>{emoji}</Text>
-    </Animated.View>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={styles.touchable}
+    >
+      <Animated.View style={[styles.container, animatedStyle]}>
+        <Text style={styles.emoji}>{emoji}</Text>
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  touchable: {
     justifyContent: 'center',
     alignItems: 'center',
   },
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    // 3D shadow effects
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 15,
+  },
   emoji: {
-    fontSize: 130, // Between 120-140px as specified
+    fontSize: 220, // Much larger - takes up more screen
     textAlign: 'center',
+    // Additional 3D effect with text shadow
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 8,
   },
 });
-
